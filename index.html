@@ -1,0 +1,357 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sorteo con Ganadores</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .controls, .exportControls {
+      margin-bottom: 15px;
+    }
+    input[type="text"], input[type="number"], select {
+      padding: 5px;
+      margin: 5px;
+      width: 150px;
+    }
+    #captureWrapper {
+      display: inline-flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 15px;
+      border: 3px solid #aaa;
+      background-color: #fff;
+      gap: 30px;
+      margin-top: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 10px;
+    }
+    .number {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+      font-weight: bold;
+      white-space: pre-line;
+      color: #000;
+      width: 65px;
+      height: 65px;
+    }
+    .premios {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .premios input {
+      padding: 5px;
+      width: 180px;
+      box-sizing: border-box;
+    }
+    .premios-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    #fondoInput {
+      display: none;
+    }
+    .custom-file-button {
+      display: inline-block;
+      padding: 6px 12px;
+      background-color: #ddd;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    option[value="Efectivo"] { background-color: red; color: white; }
+    option[value="Mercado Pago"] { background-color: yellow; color: black; }
+    option[value="Banco Patagonia"] { background-color: lightblue; color: black; }
+    option[value="Mercado Pago Mío"] { background-color: lightgreen; color: black; }
+    option[value="No Pagó"] { background-color: #f9f9f9; color: black; }
+  </style>
+</head>
+<body>
+<h2>Sorteo por Quiniela Nacional</h2>
+<div class="controls">
+  <input type="text" id="inputNumber" placeholder="Número (00-99)" maxlength="2">
+  <input type="text" id="inputName" placeholder="Nombre">
+  <select id="medioPago">
+    <option value="Efectivo">Efectivo</option>
+    <option value="Mercado Pago">Mercado Pago</option>
+    <option value="Banco Patagonia">Banco Patagonia</option>
+    <option value="Mercado Pago Mío">Mercado Pago Mío</option>
+    <option value="No Pagó">No Pagó</option>
+  </select>
+  <button onclick="assignName()">Asignar</button>
+  <button onclick="removeName()">Seleccionar número</button>
+  <button onclick="modificarMedioPago()">Modificar Medio de Pago</button>
+</div>
+<div class="controls">
+  Valor del Número: $ <input type="number" id="valorNumero" value="1800">
+  <button onclick="actualizarValorNumero()">Actualizar valor</button>
+</div>
+<div class="exportControls">
+  Fecha del Sorteo:
+  <input type="text" id="fechaSorteo" placeholder="Ej: 15/06/2025">
+  Nº de Sorteo:
+  <input type="text" id="numeroSorteo" placeholder="Ej: 123">
+  <button onclick="captureGridAsImage()">📸 Guardar imagen JPG</button>
+</div>
+<div class="exportControls">
+  Color del marco:
+  <input type="color" id="colorMarco" value="#aaaaaa">
+  <button onclick="cambiarColorMarco()">Cambiar</button>
+  <label class="custom-file-button" onclick="document.getElementById('fondoInput').click()">📷 Subir Fondo</label>
+  <input type="file" id="fondoInput" accept="image/*" onchange="cambiarFondo()">
+</div>
+<div class="exportControls">
+  <h3>Ingresar Números Ganadores </h3>
+  <div id="ganadoresInputs">
+    <input type="text" maxlength="4" placeholder="1º" id="ganador0">
+    <input type="text" maxlength="4" placeholder="2º" id="ganador1">
+    <input type="text" maxlength="4" placeholder="3º" id="ganador2">
+    <input type="text" maxlength="4" placeholder="4º" id="ganador3">
+    <input type="text" maxlength="4" placeholder="5º" id="ganador4">
+    <input type="text" maxlength="4" placeholder="6º" id="ganador5">
+    <input type="text" maxlength="4" placeholder="7º" id="ganador6">
+    <input type="text" maxlength="4" placeholder="8º" id="ganador7">
+    <input type="text" maxlength="4" placeholder="9º" id="ganador8">
+    <input type="text" maxlength="4" placeholder="10º" id="ganador9">
+    <button onclick="generarPDFGanadores()"> PDF Ganadores</button>
+  </div>
+</div>
+<div id="captureWrapper">
+  <div class="grid" id="grid"></div>
+  <div class="premios">
+    <div class="premios-title">Premios</div>
+    <input type="text" value="1º Premio">
+    <input type="text" value="2º Premio">
+    <input type="text" value="3º Premio">
+    <input type="text" value="4º Premio">
+    <input type="text" value="5º Premio">
+    <input type="text" value="6º Premio">
+    <input type="text" value="7º Premio">
+    <input type="text" value="8º Premio">
+    <input type="text" value="9º Premio">
+    <input type="text" value="10º Premio">
+  </div>
+</div>
+<script>
+const numbers = {};
+let valorActual = 0000;
+const grid = document.getElementById("grid");
+for (let i = 0; i < 100; i++) {
+  const num = i.toString().padStart(2, '0');
+  numbers[num] = { nombre: '', medio: null };
+  const div = document.createElement("div");
+  div.className = "number";
+  div.id = "num-" + num;
+  div.innerText = num;
+  grid.appendChild(div);
+}
+function actualizarValorNumero() {
+  const nuevoValor = parseFloat(document.getElementById("valorNumero").value);
+  if (isNaN(nuevoValor) || nuevoValor <= 0) return alert("Valor inválido");
+  valorActual = nuevoValor;
+}
+function assignName() {
+  const num = document.getElementById("inputNumber").value.padStart(2, '0');
+  const name = document.getElementById("inputName").value.trim();
+  const medio = document.getElementById("medioPago").value;
+  if (!numbers.hasOwnProperty(num)) return alert("Número inválido");
+  if (!name) return alert("Nombre requerido");
+  numbers[num].nombre = name;
+  numbers[num].medio = medio;
+  actualizarVisual(num);
+  generatePDFTicket(num);
+}
+function modificarMedioPago() {
+  const num = document.getElementById("inputNumber").value.padStart(2, '0');
+  if (!numbers.hasOwnProperty(num)) return alert("Número inválido");
+  const medio = document.getElementById("medioPago").value;
+  numbers[num].medio = medio;
+  actualizarVisual(num);
+}
+function actualizarVisual(num) {
+  const div = document.getElementById("num-" + num);
+  const nombre = numbers[num].nombre;
+  const medio = numbers[num].medio;
+  div.innerText = `${num}
+${nombre}`;
+  div.style.backgroundColor = (medio === "No Pagó") ? 'green' : getColorPorMedio(medio);
+  div.style.color = (div.style.backgroundColor === 'yellow' || div.style.backgroundColor === 'lightgreen') ? '#000' : '#fff';
+}
+function removeName() {
+  const num = document.getElementById("inputNumber").value.padStart(2, '0');
+  if (!numbers.hasOwnProperty(num)) return;
+  numbers[num] = { nombre: '', medio: null };
+  const div = document.getElementById("num-" + num);
+  div.innerText = num;
+  div.style.backgroundColor = "#f9f9f9";
+  div.style.color = "#000";
+}
+function getColorPorMedio(medio) {
+  const m = medio.toLowerCase();
+  if (m.includes("efectivo")) return "red";
+  if (m.includes("mercado pago") && m.includes("mío")) return "lightgreen";
+  if (m.includes("mercado pago")) return "yellow";
+  if (m.includes("patagonia")) return "lightblue";
+  return "#d3d3d3";
+}
+async function generatePDFTicket(numero) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const now = new Date().toLocaleString('es-AR');
+  const data = numbers[numero];
+  const nombre = data?.nombre || '';
+  const medio = data?.medio || 'No especificado';
+  doc.setFontSize(18);
+  doc.text("Número Asignado", 20, 20);
+  doc.setFontSize(12);
+  doc.text("Sortea por Quiniela Nacional", 20, 30);
+  doc.text(`Valor del Número: $${valorActual}`, 20, 38);
+  doc.text(`Número: ${numero}`, 20, 50);
+  doc.text(`Nombre: ${nombre}`, 20, 58);
+  doc.text(`Medio de Pago: ${medio}`, 20, 66);
+  doc.text(`Fecha: ${now}`, 20, 76);
+  doc.save(`Ticket_${numero}_${nombre}.pdf`);
+}
+function captureGridAsImage() {
+  html2canvas(document.getElementById("captureWrapper")).then(canvas => {
+    const link = document.createElement("a");
+    link.download = `Sorteo.jpg`;
+    link.href = canvas.toDataURL("image/jpeg", 1.0);
+    link.click();
+  });
+}
+function cambiarColorMarco() {
+  const color = document.getElementById("colorMarco").value;
+  document.getElementById("captureWrapper").style.borderColor = color;
+}
+function cambiarFondo() {
+  const input = document.getElementById("fondoInput");
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      document.body.style.backgroundImage = `url(${e.target.result})`;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+  function generarPDFGanadores() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(16);
+  doc.text("Ganadores del Sorteo", 20, 20);
+  doc.setFontSize(12);
+  let y = 30;
+
+  for (let i = 0; i < 10; i++) {
+    const completo = document.getElementById("ganador" + i).value.padStart(4, '0'); // número de 4 cifras
+    const ultimosDos = completo.slice(-2); // toma los últimos 2 dígitos
+    const persona = numbers[ultimosDos]?.nombre;
+
+    const premio = `${i + 1}º Premio`;
+    if (persona) {
+      doc.text(`${premio}: ${completo} (Ganador con el ${ultimosDos}) - ${persona}`, 20, y);
+    } else {
+      doc.text(`${premio}: ${completo} (Ganador con el ${ultimosDos}) - Sin asignación`, 20, y);
+    }
+    y += 10;
+  }
+
+  doc.save("Ganadores.pdf");
+}
+</script>
+
+<div class="exportControls">
+  <button onclick="exportarGrillaSinColores()">Exportar grilla sin colores (PDF)</button>
+  <button onclick="cerrarAplicacion()">❌ Cerrar</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+function exportarGrillaSinColores() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(10);
+  let x = 10, y = 20, count = 0;
+
+  for (let i = 0; i < 100; i++) {
+    const num = i.toString().padStart(2, '0');
+    const nombre = numbers[num].nombre || '';
+    doc.text(`${num} ${nombre}`, x, y);
+    x += 40;
+    count++;
+    if (count % 5 === 0) {
+      x = 10;
+      y += 10;
+    }
+  }
+
+  doc.save("Grilla_Sin_Colores.pdf");
+}
+
+function cerrarAplicacion() {
+  if (!confirm("¿Estás seguro de que querés cerrar? Se generarán los archivos PDF y Excel automáticamente.")) return;
+
+  generarPDFCompleto();
+  generarExcel();
+
+  setTimeout(() => {
+    alert("Archivos generados. Podés cerrar la ventana.");
+    // window.close(); // No se permite en muchos navegadores por seguridad
+  }, 1000);
+}
+
+function generarPDFCompleto() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(10);
+  let x = 10, y = 20, count = 0;
+
+  for (let i = 0; i < 100; i++) {
+    const num = i.toString().padStart(2, '0');
+    const data = numbers[num];
+    const linea = `${num} - ${data.nombre || ''} (${data.medio || ''})`;
+    doc.text(linea, x, y);
+    y += 6;
+    if (y > 280) {
+      doc.addPage();
+      y = 20;
+    }
+  }
+
+  doc.save("Grilla_Completa.pdf");
+}
+
+function generarExcel() {
+  const wb = XLSX.utils.book_new();
+  const datos = [["Número", "Nombre", "Medio de Pago"]];
+
+  for (let i = 0; i < 100; i++) {
+    const num = i.toString().padStart(2, '0');
+    const data = numbers[num];
+    datos.push([num, data.nombre || '', data.medio || '']);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(datos);
+  XLSX.utils.book_append_sheet(wb, ws, "Grilla");
+  XLSX.writeFile(wb, "Grilla_Sorteo.xlsx");
+}
+</script>
+
+</body>
+</html>
